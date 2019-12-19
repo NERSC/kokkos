@@ -59,10 +59,16 @@ struct TestInit {
   void testit() {
     Kokkos::initialize();
     {
-      std::cout << "************************************************************************************" << std::endl;
-      std::cout << "Hello World from Kokkos Default execution space " << Kokkos::DefaultExecutionSpace::name <<
-        " and the Host execution space is " << Kokkos::DefaultHostExecutionSpace::name << std::endl;
-      std::cout << "************************************************************************************" << std::endl;
+      std::cout << "***********************************************************"
+                   "*************************"
+                << std::endl;
+      std::cout << "Hello World from Kokkos Default execution space "
+                << Kokkos::DefaultExecutionSpace::name
+                << " and the Host execution space is "
+                << Kokkos::DefaultHostExecutionSpace::name << std::endl;
+      std::cout << "***********************************************************"
+                   "*************************"
+                << std::endl;
     }
     Kokkos::finalize();
   }
