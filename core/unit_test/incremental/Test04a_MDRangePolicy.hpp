@@ -51,17 +51,16 @@
 
 namespace Test {
 
-using dataType = double;
+using DataType = double;
 const int N    = 10;
 const int M    = 10;
 
 // Unit Test for Reduction
 
 struct MDFunctor {
-  const double value = 0.5;
-  dataType *_data;
+  DataType *_data;
 
-  MDFunctor(dataType *data) : _data(data) {}
+  MDFunctor(DataType *data) : _data(data) {}
 
   // 2D
   KOKKOS_INLINE_FUNCTION
@@ -82,7 +81,7 @@ struct MDFunctor {
 
 template <class ExecSpace>
 struct TestMDRangePolicy {
-  dataType *deviceData, *hostData;
+  DataType *deviceData, *hostData;
 
   // memory_space for the memory allocation
   // memory_space for the memory allocation
@@ -90,47 +89,38 @@ struct TestMDRangePolicy {
   typedef Kokkos::HostSpace MemSpaceH;
 
   // compare and equal
-  int compare_equal_2D(double sum) {
+  void compare_equal_2D() {
     int error = 0;
     for (int i = 0; i < N; ++i)
-      for (int j = 0; j < M; ++j)
-        if (hostData[i * M + j] != i * j) ++error;
-
-    return error;
+      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData[i * M + j], i * j);
   }
 
   // compare and equal
-  int compare_equal_3D(double sum) {
+  void compare_equal_3D() {
     int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
-          if (hostData[i * M * N + j * M + k] != i * j * k) ++error;
-
-    return error;
+          ASSERT_EQ(hostData[i * M * N + j * M + k], i * j * k);
   }
 
   // compare and equal
-  int compare_equal_4D(double sum) {
+  void compare_equal_4D() {
     int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
           for (int l = 0; l < M; ++l)
-            if (hostData[i * M * N * M + j * M * N + k * M + l] !=
-                i * j * k * l)
-              ++error;
-
-    return error;
+            ASSERT_EQ(hostData[i * M * N * M + j * M * N + k * M + l],
+                      i * j * k * l);
   }
 
   // A 2-D MDRangePolicy
   void mdRange2D() {
-    double sum = 0.0;
-
-    // iterator type
+    // Index Type for the iterator
     typedef Kokkos::IndexType<int> int_index;
 
+    // An MDRangePolicy for 2 nested loops
     typedef typename Kokkos::Experimental::MDRangePolicy<
         ExecSpace, Kokkos::Experimental::Rank<2>, int_index>
         MDPolicyType_2D;
@@ -141,22 +131,21 @@ struct TestMDRangePolicy {
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N]
-    deviceData = (dataType *)Kokkos::kokkos_malloc<MemSpaceD>(
-        "dataD", num_elements * sizeof(dataType));
-    hostData = (dataType *)Kokkos::kokkos_malloc<MemSpaceH>(
-        "dataH", num_elements * sizeof(dataType));
+    deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
+        "dataD", num_elements * sizeof(DataType));
+    hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "dataH", num_elements * sizeof(DataType));
 
-    // parallel_reduce call
+    // parallel_for call
     MDFunctor Functor_2D(deviceData);
     Kokkos::parallel_for("MDRange2D", mdPolicy_2D, Functor_2D);
 
     // Copy the data back to Host memory space
     Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
-        hostData, deviceData, num_elements * sizeof(dataType));
+        hostData, deviceData, num_elements * sizeof(DataType));
 
     // Check if all data has been update correctly
-    int sumError = compare_equal_2D(sum);
-    ASSERT_EQ(sumError, 0);
+    compare_equal_2D();
 
     // Free the allocated memory
     Kokkos::kokkos_free<MemSpaceD>(deviceData);
@@ -165,10 +154,10 @@ struct TestMDRangePolicy {
 
   // A 3-D MDRangePolicy
   void mdRange3D() {
-    double sum = 0.0;
-
+    // Index Type for the iterator
     typedef Kokkos::IndexType<int> int_index;
 
+    // An MDRangePolicy for 3 nested loops
     typedef typename Kokkos::Experimental::MDRangePolicy<
         ExecSpace, Kokkos::Experimental::Rank<3>, int_index>
         MDPolicyType_3D;
@@ -179,22 +168,21 @@ struct TestMDRangePolicy {
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N*N]
-    deviceData = (dataType *)Kokkos::kokkos_malloc<MemSpaceD>(
-        "dataD", num_elements * sizeof(dataType));
-    hostData = (dataType *)Kokkos::kokkos_malloc<MemSpaceH>(
-        "dataH", num_elements * sizeof(dataType));
+    deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
+        "dataD", num_elements * sizeof(DataType));
+    hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "dataH", num_elements * sizeof(DataType));
 
-    // parallel_reduce call
+    // parallel_for call
     MDFunctor Functor_3D(deviceData);
     Kokkos::parallel_for("MDRange3D", mdPolicy_3D, Functor_3D);
 
     // Copy the data back to Host memory space
     Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
-        hostData, deviceData, num_elements * sizeof(dataType));
+        hostData, deviceData, num_elements * sizeof(DataType));
 
     // Check if all data has been update correctly
-    int sumError = compare_equal_3D(sum);
-    ASSERT_EQ(sumError, 0);
+    compare_equal_3D();
 
     // Free the allocated memory
     Kokkos::kokkos_free<MemSpaceD>(deviceData);
@@ -203,10 +191,10 @@ struct TestMDRangePolicy {
 
   // A 4-D MDRangePolicy
   void mdRange4D() {
-    double sum = 0.0;
-
+    // Index Type for the iterator
     typedef Kokkos::IndexType<int> int_index;
 
+    // An MDRangePolicy for 4 nested loops
     typedef typename Kokkos::Experimental::MDRangePolicy<
         ExecSpace, Kokkos::Experimental::Rank<4>, int_index>
         MDPolicyType_4D;
@@ -217,22 +205,21 @@ struct TestMDRangePolicy {
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N*N]
-    deviceData = (dataType *)Kokkos::kokkos_malloc<MemSpaceD>(
-        "dataD", num_elements * sizeof(dataType));
-    hostData = (dataType *)Kokkos::kokkos_malloc<MemSpaceH>(
-        "dataH", num_elements * sizeof(dataType));
+    deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
+        "dataD", num_elements * sizeof(DataType));
+    hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "dataH", num_elements * sizeof(DataType));
 
-    // parallel_reduce call
+    // parallel_for call
     MDFunctor Functor_4D(deviceData);
     Kokkos::parallel_for("MDRange4D", mdPolicy_4D, Functor_4D);
 
     // Copy the data back to Host memory space
     Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
-        hostData, deviceData, num_elements * sizeof(dataType));
+        hostData, deviceData, num_elements * sizeof(DataType));
 
     // Check if all data has been update correctly
-    int sumError = compare_equal_4D(sum);
-    ASSERT_EQ(sumError, 0);
+    compare_equal_4D();
 
     // Free the allocated memory
     Kokkos::kokkos_free<MemSpaceD>(deviceData);
