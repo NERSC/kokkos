@@ -45,14 +45,13 @@
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:4
+// Unit Test for MDRangePolicy without Views
 
 namespace Test {
 
 using DataType = double;
 const int N    = 10;
 const int M    = 10;
-
-// Unit Test for Reduction
 
 struct MDFunctor {
   DataType *_data;
