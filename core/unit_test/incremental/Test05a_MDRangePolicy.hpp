@@ -48,6 +48,7 @@
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:5
+// Unit test for MDRangePolicy with Views
 
 namespace Test {
 
@@ -55,21 +56,18 @@ using DataType = double;
 const int N    = 10;
 const int M    = 10;
 
-// Unit Test for Reduction
-
 template <class ExecSpace>
 struct MDFunctor {
-
-  //2D View
-  typedef typename Kokkos::View<DataType**, ExecSpace> View_2D;
+  // 2D View
+  typedef typename Kokkos::View<DataType **, ExecSpace> View_2D;
   typedef typename View_2D::HostMirror Host_view_2D;
 
-  //3D View
-  typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
+  // 3D View
+  typedef typename Kokkos::View<DataType ***, ExecSpace> View_3D;
   typedef typename View_2D::HostMirror Host_view_3D;
 
-  //4D View
-  typedef typename Kokkos::View<DataType****, ExecSpace> View_4D;
+  // 4D View
+  typedef typename Kokkos::View<DataType ****, ExecSpace> View_4D;
   typedef typename View_2D::HostMirror Host_view_4D;
 
   View_2D _dataView2D;
@@ -82,36 +80,34 @@ struct MDFunctor {
 
   // 2D
   KOKKOS_INLINE_FUNCTION
-  void operator()(const int i, const int j) const { _dataView2D(i,j) = i * j; }
+  void operator()(const int i, const int j) const { _dataView2D(i, j) = i * j; }
 
   // 3D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k) const {
-    _dataView3D(i,j,k) = i * j * k;
+    _dataView3D(i, j, k) = i * j * k;
   }
 
   // 4D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k, const int l) const {
-    _dataView4D(i,j,k,l) = i * j * k * l;
+    _dataView4D(i, j, k, l) = i * j * k * l;
   }
 };
 
 template <class ExecSpace>
 struct TestMDRangePolicy {
-
-  //2D View
-  typedef typename Kokkos::View<DataType**, ExecSpace> View_2D;
+  // 2D View
+  typedef typename Kokkos::View<DataType **, ExecSpace> View_2D;
   typedef typename View_2D::HostMirror Host_view_2D;
 
-  //3D View
-  typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
+  // 3D View
+  typedef typename Kokkos::View<DataType ***, ExecSpace> View_3D;
   typedef typename View_3D::HostMirror Host_view_3D;
 
-  //3D View
-  typedef typename Kokkos::View<DataType****, ExecSpace> View_4D;
+  // 3D View
+  typedef typename Kokkos::View<DataType ****, ExecSpace> View_4D;
   typedef typename View_4D::HostMirror Host_view_4D;
-
 
   DataType *deviceData, *hostData;
 
@@ -124,7 +120,7 @@ struct TestMDRangePolicy {
   void compare_equal_2D(Host_view_2D hostData) {
     int error = 0;
     for (int i = 0; i < N; ++i)
-      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData(i,j), i * j);
+      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData(i, j), i * j);
   }
 
   // compare and equal
@@ -132,8 +128,7 @@ struct TestMDRangePolicy {
     int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
-        for (int k = 0; k < N; ++k)
-          ASSERT_EQ(hostData(i,j,k), i * j * k);
+        for (int k = 0; k < N; ++k) ASSERT_EQ(hostData(i, j, k), i * j * k);
   }
 
   // compare and equal
@@ -143,13 +138,11 @@ struct TestMDRangePolicy {
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
           for (int l = 0; l < M; ++l)
-            ASSERT_EQ(hostData(i,j,k,l),
-                      i * j * k * l);
+            ASSERT_EQ(hostData(i, j, k, l), i * j * k * l);
   }
 
   // A 2-D MDRangePolicy
   void mdRange2D() {
-
     // Index Type for the iterator
     typedef Kokkos::IndexType<int> int_index;
 
@@ -159,7 +152,7 @@ struct TestMDRangePolicy {
         MDPolicyType_2D;
     MDPolicyType_2D mdPolicy_2D({0, 0}, {N, M});
 
-    View_2D deviceDataView("deviceData",N,M);
+    View_2D deviceDataView("deviceData", N, M);
     Host_view_2D hostDataView = create_mirror_view(deviceDataView);
 
     // parallel_for call
@@ -171,12 +164,10 @@ struct TestMDRangePolicy {
 
     // Check if all data has been update correctly
     compare_equal_2D(hostDataView);
-
   }
 
   // A 3-D MDRangePolicy
   void mdRange3D() {
-
     // Index Type for the iterator
     typedef Kokkos::IndexType<int> int_index;
 
@@ -188,7 +179,7 @@ struct TestMDRangePolicy {
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N*N]
-    View_3D deviceDataView("deviceData",N,M,N);
+    View_3D deviceDataView("deviceData", N, M, N);
     Host_view_3D hostDataView = create_mirror_view(deviceDataView);
 
     // parallel_for call
@@ -218,7 +209,7 @@ struct TestMDRangePolicy {
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N*N]
-    View_4D deviceDataView("deviceData",N,M,N,M);
+    View_4D deviceDataView("deviceData", N, M, N, M);
     Host_view_4D hostDataView = create_mirror_view(deviceDataView);
 
     // parallel_for call
