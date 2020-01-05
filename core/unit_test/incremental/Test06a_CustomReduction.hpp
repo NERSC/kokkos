@@ -66,6 +66,7 @@ struct complex_num
     _re += update._re;
     _im += update._im;
   }
+
 };
 
 template <class ExecSpace>
@@ -106,11 +107,6 @@ struct myComplexArray
     Kokkos::deep_copy(array, host_array);
   }
 
-  //reduction operator for sum
-  KOKKOS_INLINE_FUNCTION
-  void operator += (myComplexArray &otherArray) {}
-
-
   // return a complex number that has the reduced value of all the elements in the complex array
   complex_num reduce()
   {
@@ -125,6 +121,7 @@ struct myComplexArray
   KOKKOS_INLINE_FUNCTION
   void operator() (const int i, complex_num &updateSum) const
   {
+    //array(i) = i * value;
     updateSum += array(i);
   }
 
@@ -138,15 +135,15 @@ struct TestCustomReduce {
     complexArray.init(value);
     complexArray.copyToDevice();
 
-//    complex_num result;
-//    Kokkos::parallel_reduce("complex_reduce",num_elements,complexArray, result);
+    complex_num result;
+    Kokkos::parallel_reduce("complex_reduce",num_elements,complexArray, result);
 //    Kokkos::parallel_reduce("complex_reduce",num_elements, KOKKOS_LAMBDA(const int i, complex_num &Update)
 //        {
 //      Update += complexArray.host_array(i);
 //      },result);
 
-    complex_num result = complexArray.reduce();
-
+//   complex_num result = complexArray.reduce();
+//
     int sum = 0;
     for(int i = 0; i < num_elements; ++i)
       sum += i;
