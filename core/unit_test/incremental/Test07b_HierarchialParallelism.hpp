@@ -57,7 +57,7 @@ const int M          = 10;
 const DataType value = 0.5;
 
 template <class ExecSpace>
-struct HPFunctor {
+struct TeamThreadHPFunctor {
   // 2D View
   typedef typename Kokkos::View<DataType**, ExecSpace> View_2D;
 
@@ -67,7 +67,7 @@ struct HPFunctor {
 
   View_2D _dataView2D;
 
-  HPFunctor(View_2D dataView) : _dataView2D(dataView) {}
+  TeamThreadHPFunctor(View_2D dataView) : _dataView2D(dataView) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const team_member& thread) const {
@@ -99,7 +99,7 @@ struct TestHierarchialParallelism {
     Host_View_2D hostDataView = create_mirror_view(deviceDataView);
     team_policy policy_2D1(N, Kokkos::AUTO());
 
-    HPFunctor<ExecSpace> func(deviceDataView);
+    TeamThreadHPFunctor<ExecSpace> func(deviceDataView);
     Kokkos::parallel_for(policy_2D1, func);
 
     // Copy the data back to Host memory space
@@ -110,7 +110,7 @@ struct TestHierarchialParallelism {
   }
 };
 
-TEST(TEST_CATEGORY, incr_07b_hierarchialParallelism) {
+TEST(TEST_CATEGORY, incr_07b_TeamThreadRange) {
   TestHierarchialParallelism<TEST_EXECSPACE> test;
   test.test_HierarchialParallelism();
 }

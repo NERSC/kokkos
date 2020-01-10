@@ -54,12 +54,12 @@ const int N = 1;
 const int M = 1;
 
 template <class ExecSpace>
-struct HPFunctorSimple {
+struct SimpleHPFunctor {
   // Team policy and member type for kokkos
   typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
   typedef typename team_policy::member_type team_member;
 
-  HPFunctorSimple() = default;
+  SimpleHPFunctor() = default;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const team_member& thread) const {
@@ -82,12 +82,12 @@ struct TestSimpleHierarchialParallelism {
 
     team_policy policy_2D(N, M);
 
-    HPFunctorSimple<ExecSpace> func{};
+    SimpleHPFunctor<ExecSpace> func{};
     Kokkos::parallel_for(policy_2D, func);
   }
 };
 
-TEST(TEST_CATEGORY, incr_07a_hierarchialParallelism) {
+TEST(TEST_CATEGORY, incr_07a_SimpleHierarchialParallelism) {
   TestSimpleHierarchialParallelism<TEST_EXECSPACE> test;
   test.test_HierarchialParallelism();
 }
