@@ -71,17 +71,16 @@ struct TestReduction {
   int num_elements = 10;
   DataType *deviceData, *hostData;
 
-  // memory_space for the memory allocation
-  // memory_space for the memory allocation
+  // memory_spaces
   typedef typename TEST_EXECSPACE::memory_space MemSpaceD;
   typedef Kokkos::HostSpace MemSpaceH;
 
   // compare and equal
-  int compare_equal(double sum) {
+  void compare_equal(double sum) {
     int sum_local = 0;
     for (int i = 0; i < num_elements; ++i) sum_local += i;
 
-    return (sum - (sum_local * value));
+    ASSERT_EQ(sum, sum_local * value);
   }
 
   void reduction() {
@@ -110,8 +109,7 @@ struct TestReduction {
         hostData, deviceData, num_elements * sizeof(DataType));
 
     // Check if all data has been update correctly
-    int sumError = compare_equal(sum);
-    ASSERT_EQ(sumError, 0);
+    compare_equal(sum);
 
     // Free the allocated memory
     Kokkos::kokkos_free<MemSpaceD>(deviceData);
