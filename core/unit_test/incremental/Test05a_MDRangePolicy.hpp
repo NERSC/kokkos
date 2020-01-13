@@ -42,9 +42,6 @@
 */
 
 #include <Kokkos_Core.hpp>
-#include <cstdio>
-#include <sstream>
-#include <type_traits>
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:5
@@ -55,6 +52,10 @@ namespace Test {
 using DataType = double;
 const int N    = 10;
 const int M    = 10;
+
+#define UpdateValue_2D i *j
+#define UpdateValue_3D i *j *k
+#define UpdateValue_4D i *j *k *l
 
 template <class ExecSpace>
 struct MDFunctor {
@@ -80,18 +81,20 @@ struct MDFunctor {
 
   // 2D
   KOKKOS_INLINE_FUNCTION
-  void operator()(const int i, const int j) const { _dataView2D(i, j) = i * j; }
+  void operator()(const int i, const int j) const {
+    _dataView2D(i, j) = UpdateValue_2D;
+  }
 
   // 3D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k) const {
-    _dataView3D(i, j, k) = i * j * k;
+    _dataView3D(i, j, k) = UpdateValue_3D;
   }
 
   // 4D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k, const int l) const {
-    _dataView4D(i, j, k, l) = i * j * k * l;
+    _dataView4D(i, j, k, l) = UpdateValue_4D;
   }
 };
 
@@ -118,27 +121,25 @@ struct TestMDRangePolicy {
 
   // compare and equal
   void compare_equal_2D(Host_view_2D hostData) {
-    int error = 0;
     for (int i = 0; i < N; ++i)
-      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData(i, j), i * j);
+      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData(i, j), UpdateValue_2D);
   }
 
   // compare and equal
   void compare_equal_3D(Host_view_3D hostData) {
-    int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
-        for (int k = 0; k < N; ++k) ASSERT_EQ(hostData(i, j, k), i * j * k);
+        for (int k = 0; k < N; ++k)
+          ASSERT_EQ(hostData(i, j, k), UpdateValue_3D);
   }
 
   // compare and equal
   void compare_equal_4D(Host_view_4D hostData) {
-    int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
           for (int l = 0; l < M; ++l)
-            ASSERT_EQ(hostData(i, j, k, l), i * j * k * l);
+            ASSERT_EQ(hostData(i, j, k, l), UpdateValue_4D);
   }
 
   // A 2-D MDRangePolicy
@@ -205,7 +206,6 @@ struct TestMDRangePolicy {
     MDPolicyType_4D mdPolicy_4D({0, 0, 0, 0}, {N, M, N, M});
 
     // Total number of elements
-    size_t num_elements = N * M * N * M;
 
     // Allocate Memory for both device and host memory spaces
     // Data[M*N*N]
