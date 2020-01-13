@@ -44,88 +44,84 @@
 #include <Kokkos_Core.hpp>
 #include <gtest/gtest.h>
 
-/// @Kokkos_Feature_Level_Required:8
-// Unit test for scratch space, team_scratch and thread_scratch
-
-#define updateValue i* j* value
+/// @Kokkos_Feature_Level_Required:9
+// Unit test for hierarchial parallelism with ThreadTeam and TeamVector lanes
 
 namespace Test {
 
-using DataType       = double;
-const int N          = 10;
-const int M          = 10;
-const DataType value = 0.5;
-const int shared_elements = 3;
+  using DataType = double;
+  const int N    = 10;
+  const int M    = 10;
+  const DataType value = 0.5;
+
+#define updateValue i*j*k*value
 
 template <class ExecSpace>
-struct TeamThreadHPFunctor {
+struct HPFunctor_TeamVector {
   // 2D View
-  typedef typename Kokkos::View<DataType**, ExecSpace> View_2D;
+  typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
+  typedef typename View_3D::HostMirror Host_view_3D;
 
-  // Team policy and member type for kokkos
+  //Team policy and member type for kokkos
   typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
   typedef typename team_policy::member_type team_member;
 
-  typedef typename ExecSpace::scratch_memory_space shared_space;
-  typedef typename Kokkos::View<DataType*, shared_space> View_Shared_1D;
+  View_3D _dataView3D;
 
-  View_2D _dataView2D;
-
-  TeamThreadHPFunctor(View_2D dataView) : _dataView2D(dataView) {}
+  HPFunctor_TeamVector(View_3D dataView) : _dataView3D(dataView) {}
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const team_member& thread) const {
-    const int i = thread.league_rank();
-
-    //Allocate shared array between threads in a team
-    //Create a shared array of the size of 1st dimension
-    View_Shared_1D shared_array(thread.team_shmem(),_dataView2D.extent(1));
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(thread, M), [&](const int& j) {
-      _dataView2D(i, j) = updateValue;
-    });
-
-    Kokkos::single(Kokkos::PerTeam(thread),[=]()
+  void operator() (const team_member& team) const
+  {
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,M), [&](const int& j)
     {
-      shared_array(i) = thread.team_size() * i * value;
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,N), [&](const int& k)
+      {
+        _dataView3D(i,j,k) = updateValue;
+      });
     });
   }
 };
 
 template <class ExecSpace>
-struct TestScratchSpace {
-  typedef typename Kokkos::View<DataType**, ExecSpace> View_2D;
-  typedef typename View_2D::HostMirror Host_View_2D;
+struct TestHierarchialParallelism_TeamVector {
 
-  typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
-  typedef typename team_policy::member_type team_member;
+    typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
+    typedef typename View_3D::HostMirror Host_View_3D;
+
+    typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
+    typedef typename team_policy::member_type team_member;
 
   // compare and equal
-  void compare_equal(Host_View_2D hostData) {
+  void compare_equal(Host_View_3D hostData) {
     for (int i = 0; i < N; ++i)
-      for (int j = 0; j < M; ++j) {
-        ASSERT_EQ(hostData(i, j), updateValue);
-      }
+      for (int j = 0; j < M; ++j)
+        for(int k = 0; k < N; ++k)
+          ASSERT_EQ(hostData(i, j, k), updateValue);
+
   }
 
-  void testit() {
-    View_2D deviceDataView("deviceData", N, M);
-    Host_View_2D hostDataView = create_mirror_view(deviceDataView);
-    team_policy policy_2D1(N, Kokkos::AUTO());
+  void test_HP_TeamVector() {
 
-    TeamThreadHPFunctor<ExecSpace> func(deviceDataView);
-    Kokkos::parallel_for(policy_2D1, func);
+    View_3D deviceDataView("deviceData",N,M,N);
+    Host_View_3D hostDataView = create_mirror_view(deviceDataView);
+    team_policy policy_2D(N,Kokkos::AUTO() );
+
+    HPFunctor_TeamVector<ExecSpace> func(deviceDataView);
+    Kokkos::parallel_for(policy_2D,func);
 
     // Copy the data back to Host memory space
     Kokkos::deep_copy(hostDataView, deviceDataView);
 
-    // Compare and equal for correctness
+    //Compare and equal for correctness
     compare_equal(hostDataView);
   }
 };
 
-TEST(TEST_CATEGORY, incr_08a_ScratchSpace) {
-  TestScratchSpace<TEST_EXECSPACE> test;
-  test.testit();
+TEST(TEST_CATEGORY, incr_09a_hierarchialParallelism) {
+  TestHierarchialParallelism_TeamVector<TEST_EXECSPACE> test;
+  test.test_HP_TeamVector();
 }
 
 }  // namespace Test
