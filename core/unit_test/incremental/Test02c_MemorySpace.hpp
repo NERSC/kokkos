@@ -48,13 +48,12 @@
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:2
-
-namespace Test {
-
 // DeepCopy unit tests
 // We allocate data in the host. Copy it to the device and copy back the data
 // from device back to host We check if the original and copied data are the
 // same to evaluate the deep copies.
+
+namespace Test {
 
 template <class ExecSpace>
 struct TestIncrMemorySpace_deepcopy {
@@ -66,13 +65,10 @@ struct TestIncrMemorySpace_deepcopy {
   typedef typename ExecSpace::memory_space memSpaceD;
   typedef Kokkos::HostSpace memSpaceH;
 
-  int compare_equal_host(dataType *hostData_send, dataType *hostData_recv) {
-    int error = 0;
+  void compare_equal(dataType *hostData_send, dataType *hostData_recv) {
     for (int i = 0; i < num_elements; ++i) {
-      if (hostData_send[i] != hostData_recv[i]) error++;
+      ASSERT_EQ(hostData_send[i], hostData_recv[i]);
     }
-
-    return error;
   }
 
   void testit_DtoH() {
@@ -105,8 +101,7 @@ struct TestIncrMemorySpace_deepcopy {
         hostData_recv, deviceData, num_elements * sizeof(dataType));
 
     // Check if all data has been copied correctly back to the host;
-    int sumError = compare_equal_host(hostData_send, hostData_recv);
-    ASSERT_EQ(sumError, 0);
+    compare_equal(hostData_send, hostData_recv);
   }
 };
 
