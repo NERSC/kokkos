@@ -42,16 +42,12 @@
 */
 
 #include <Kokkos_Core.hpp>
-#include <cstdio>
-#include <sstream>
-#include <type_traits>
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:2
+// Unit test for Kokkos Malloc
 
 namespace Test {
-
-// Unit test for Kokkos Malloc
 
 template <class execSpace>
 struct TestIncrMemorySpace_malloc {
