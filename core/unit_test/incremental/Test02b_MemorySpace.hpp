@@ -42,19 +42,15 @@
 */
 
 /// @Kokkos_Feature_Level_Required:2
-
-#include <Kokkos_Core.hpp>
-#include <cstdio>
-#include <sstream>
-#include <type_traits>
-#include <gtest/gtest.h>
-
-namespace Test {
-
 // Unit test for kokkos_free
 // We constantly allocate and de-allocate memory.
 // If the kokkos_free does not free the memory, we will exceed the available
 // space
+
+#include <Kokkos_Core.hpp>
+#include <gtest/gtest.h>
+
+namespace Test {
 
 template <class execSpace>
 struct TestIncrMemorySpace_free {
