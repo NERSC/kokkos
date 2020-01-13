@@ -53,6 +53,10 @@ using DataType = double;
 const int N    = 10;
 const int M    = 10;
 
+#define UpdateValue_2D i *j
+#define UpdateValue_3D i *j *k
+#define UpdateValue_4D i *j *k *l
+
 struct MDFunctor {
   DataType *_data;
 
@@ -60,18 +64,20 @@ struct MDFunctor {
 
   // 2D
   KOKKOS_INLINE_FUNCTION
-  void operator()(const int i, const int j) const { _data[i * M + j] = i * j; }
+  void operator()(const int i, const int j) const {
+    _data[i * M + j] = UpdateValue_2D;
+  }
 
   // 3D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k) const {
-    _data[i * M * N + j * M + k] = i * j * k;
+    _data[i * M * N + j * M + k] = UpdateValue_3D;
   }
 
   // 4D
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, const int j, const int k, const int l) const {
-    _data[i * M * N * M + j * M * N + k * M + l] = i * j * k * l;
+    _data[i * M * N * M + j * M * N + k * M + l] = UpdateValue_4D;
   }
 };
 
@@ -86,29 +92,27 @@ struct TestMDRangePolicy {
 
   // compare and equal
   void compare_equal_2D() {
-    int error = 0;
     for (int i = 0; i < N; ++i)
-      for (int j = 0; j < M; ++j) ASSERT_EQ(hostData[i * M + j], i * j);
+      for (int j = 0; j < M; ++j)
+        ASSERT_EQ(hostData[i * M + j], UpdateValue_2D);
   }
 
   // compare and equal
   void compare_equal_3D() {
-    int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
-          ASSERT_EQ(hostData[i * M * N + j * M + k], i * j * k);
+          ASSERT_EQ(hostData[i * M * N + j * M + k], UpdateValue_3D);
   }
 
   // compare and equal
   void compare_equal_4D() {
-    int error = 0;
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
         for (int k = 0; k < N; ++k)
           for (int l = 0; l < M; ++l)
             ASSERT_EQ(hostData[i * M * N * M + j * M * N + k * M + l],
-                      i * j * k * l);
+                      UpdateValue_4D);
   }
 
   // A 2-D MDRangePolicy
