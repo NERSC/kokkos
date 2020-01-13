@@ -45,16 +45,16 @@
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:9
-// Unit test for hierarchial parallelism with ThreadTeam and TeamVector lanes
+// Unit test for hierarchial parallelism with league, team and vector lanes
 
 namespace Test {
 
-  using DataType = double;
-  const int N    = 10;
-  const int M    = 10;
-  const DataType value = 0.5;
+using DataType       = double;
+const int N          = 10;
+const int M          = 10;
+const DataType value = 0.5;
 
-#define updateValue i*j*k*value
+#define UpdateValue i* j* k* value
 
 template <class ExecSpace>
 struct HPFunctor_TeamVector {
@@ -62,7 +62,7 @@ struct HPFunctor_TeamVector {
   typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
   typedef typename View_3D::HostMirror Host_view_3D;
 
-  //Team policy and member type for kokkos
+  // Team policy and member type for kokkos
   typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
   typedef typename team_policy::member_type team_member;
 
@@ -71,50 +71,43 @@ struct HPFunctor_TeamVector {
   HPFunctor_TeamVector(View_3D dataView) : _dataView3D(dataView) {}
 
   KOKKOS_INLINE_FUNCTION
-  void operator() (const team_member& team) const
-  {
+  void operator()(const team_member& team) const {
     const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,M), [&](const int& j)
-    {
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,N), [&](const int& k)
-      {
-        _dataView3D(i,j,k) = updateValue;
-      });
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, M), [&](const int& j) {
+      Kokkos::parallel_for(
+          Kokkos::ThreadVectorRange(team, N),
+          [&](const int& k) { _dataView3D(i, j, k) = UpdateValue; });
     });
   }
 };
 
 template <class ExecSpace>
 struct TestHierarchialParallelism_TeamVector {
+  typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
+  typedef typename View_3D::HostMirror Host_View_3D;
 
-    typedef typename Kokkos::View<DataType***, ExecSpace> View_3D;
-    typedef typename View_3D::HostMirror Host_View_3D;
-
-    typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
-    typedef typename team_policy::member_type team_member;
+  typedef typename Kokkos::TeamPolicy<ExecSpace> team_policy;
+  typedef typename team_policy::member_type team_member;
 
   // compare and equal
   void compare_equal(Host_View_3D hostData) {
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < M; ++j)
-        for(int k = 0; k < N; ++k)
-          ASSERT_EQ(hostData(i, j, k), updateValue);
-
+        for (int k = 0; k < N; ++k) ASSERT_EQ(hostData(i, j, k), UpdateValue);
   }
 
   void test_HP_TeamVector() {
-
-    View_3D deviceDataView("deviceData",N,M,N);
+    View_3D deviceDataView("deviceData", N, M, N);
     Host_View_3D hostDataView = create_mirror_view(deviceDataView);
-    team_policy policy_2D(N,Kokkos::AUTO() );
+    team_policy policy_2D(N, Kokkos::AUTO());
 
     HPFunctor_TeamVector<ExecSpace> func(deviceDataView);
-    Kokkos::parallel_for(policy_2D,func);
+    Kokkos::parallel_for(policy_2D, func);
 
     // Copy the data back to Host memory space
     Kokkos::deep_copy(hostDataView, deviceDataView);
 
-    //Compare and equal for correctness
+    // Compare and equal for correctness
     compare_equal(hostDataView);
   }
 };
