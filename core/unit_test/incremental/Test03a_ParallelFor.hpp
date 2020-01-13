@@ -45,22 +45,22 @@
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:3
+// parallel-for unit test
+// create an functor which multiplies the index with a constant double value
 
 namespace Test {
 
 using DataType       = double;
 const DataType value = 0.5;
+#define UpdateValue i *value
 
-// parallel-for unit test
-// create an functor which multiplies the index with a constant double value
-
-struct Functor {
+struct ParallelForFunctor {
   DataType *_data;
 
-  Functor(DataType *data) : _data(data) {}
+  ParallelForFunctor(DataType *data) : _data(data) {}
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const int i) const { _data[i] = i * value; }
+  void operator()(const int i) const { _data[i] = UpdateValue; }
 };
 
 template <class ExecSpace>
@@ -74,7 +74,7 @@ struct TestParallel_For {
 
   void compare_equal(DataType *data) {
     for (int i = 0; i < num_elements; ++i) {
-      ASSERT_EQ(data[i], i * value);
+      ASSERT_EQ(data[i], UpdateValue);
     }
   }
 
@@ -87,7 +87,8 @@ struct TestParallel_For {
         "dataH", num_elements * sizeof(DataType));
 
     // parallel-for functor called for num_elements elements
-    Kokkos::parallel_for("parallel_for", num_elements, Functor(deviceData));
+    Kokkos::parallel_for("parallel_for", num_elements,
+                         ParallelForFunctor(deviceData));
 
     // Copy the data back to Host memory space
     Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
@@ -119,7 +120,7 @@ struct TestParallel_For {
         "dataH", num_elements * sizeof(DataType));
 
     // parallel-for functor called for num_elements elements
-    Functor func(deviceData);
+    ParallelForFunctor func(deviceData);
     Kokkos::parallel_for("RangePolicy_ParallelFor",
                          range_policy(0, num_elements), func);
 
