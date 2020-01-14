@@ -167,7 +167,19 @@ struct TestCustomReduction {
     }
   }
 
-  void customParallelFor() {
+  void parallel_reduce_correctness(compl_num sum)
+  {
+    int sum_local = 0;
+    for(int i = 0; i < N; ++i) sum_local += i;
+
+    for(int i = 0; i < N; ++i)
+    {
+      ASSERT_EQ(sum._re, sum_local * 0.5);
+      ASSERT_EQ(sum._im, sum_local * -0.5);
+    }
+  }
+
+  void customParallelReduce() {
     Complex_View complexArray("complexArray", N);
     Complex_Host_View host_complexArray = create_mirror_view(complexArray);
 
@@ -181,14 +193,15 @@ struct TestCustomReduction {
     compl_num sumNumber(0.0,0.0);
     ReduceMyComplexArray<ExecSpace> reduceArrayFunctor(complexArray);
     Kokkos::parallel_reduce("Complex Parallel reduce",N,reduceArrayFunctor,sumNumber);
+    parallel_reduce_correctness(sumNumber);
   }
 
 };
 
 // Custom Reduction test
-TEST(TEST_CATEGORY, incr_06_customReduction) {
+TEST(TEST_CATEGORY, incr_06_customParallelReduce) {
   TestCustomReduction<TEST_EXECSPACE> test;
-  test.customParallelFor();
+  test.customParallelReduce();
 }
 
 }  // namespace Test
