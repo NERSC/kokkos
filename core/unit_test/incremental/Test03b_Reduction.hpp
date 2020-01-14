@@ -99,16 +99,13 @@ struct TestReduction {
     hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
         "dataH", num_elements * sizeof(DataType));
 
-    // parallel_reduce call
     Functor func(deviceData);
+
+    // parallel_reduce call
     Kokkos::parallel_reduce("Reduction", range_policy(0, num_elements), func,
                             sum);
 
-    // Copy the data back to Host memory space
-    Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
-        hostData, deviceData, num_elements * sizeof(DataType));
-
-    // Check if all data has been update correctly
+    // Check if reduction has produced correct results
     compare_equal(sum);
 
     // Free the allocated memory
