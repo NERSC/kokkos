@@ -54,15 +54,15 @@ namespace Test {
 
 template <class ExecSpace>
 struct TestIncrMemorySpace_deepcopy {
-  using dataType         = double;
+  using DataType         = double;
   const int num_elements = 10;
   const double value     = 0.5;
 
   // Memory Space for Device and Host data
-  typedef typename ExecSpace::memory_space memSpaceD;
-  typedef Kokkos::HostSpace memSpaceH;
+  using MemSpaceD = typename ExecSpace::memory_space;
+  using MemSpaceH = Kokkos::HostSpace;
 
-  void compare_equal(dataType *hostData_send, dataType *hostData_recv) {
+  void compare_equal(DataType *hostData_send, DataType *hostData_recv) {
     for (int i = 0; i < num_elements; ++i) {
       ASSERT_EQ(hostData_send[i], hostData_recv[i]);
     }
@@ -70,18 +70,18 @@ struct TestIncrMemorySpace_deepcopy {
 
   void testit_DtoH() {
     // Allocate memory on Device space
-    dataType *deviceData = (dataType *)Kokkos::kokkos_malloc<memSpaceD>(
-        "deviceData", num_elements * sizeof(dataType));
+    DataType *deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
+        "deviceData", num_elements * sizeof(DataType));
     ASSERT_FALSE(deviceData == nullptr);
 
     // Allocate memory on Host space
-    dataType *hostData_send = (dataType *)Kokkos::kokkos_malloc<memSpaceH>(
-        "HostData", num_elements * sizeof(dataType));
+    DataType *hostData_send = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "HostData", num_elements * sizeof(DataType));
     ASSERT_FALSE(hostData_send == nullptr);
 
     // Allocate memory on Host space
-    dataType *hostData_recv = (dataType *)Kokkos::kokkos_malloc<memSpaceH>(
-        "HostData", num_elements * sizeof(dataType));
+    DataType *hostData_recv = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "HostData", num_elements * sizeof(DataType));
     ASSERT_FALSE(hostData_recv == nullptr);
 
     for (int i = 0; i < num_elements; ++i) {
@@ -90,12 +90,12 @@ struct TestIncrMemorySpace_deepcopy {
     }
 
     // Copy first from Host_send to Device
-    Kokkos::Impl::DeepCopy<memSpaceH, memSpaceD>(
-        deviceData, hostData_send, num_elements * sizeof(dataType));
+    Kokkos::Impl::DeepCopy<MemSpaceH, MemSpaceD>(
+        deviceData, hostData_send, num_elements * sizeof(DataType));
 
     // Copy first from Host_send to Device
-    Kokkos::Impl::DeepCopy<memSpaceD, memSpaceH>(
-        hostData_recv, deviceData, num_elements * sizeof(dataType));
+    Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
+        hostData_recv, deviceData, num_elements * sizeof(DataType));
 
     // Check if all data has been copied correctly back to the host;
     compare_equal(hostData_send, hostData_recv);
