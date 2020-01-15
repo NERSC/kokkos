@@ -42,9 +42,6 @@
 */
 
 #include <Kokkos_Core.hpp>
-#include <cstdio>
-#include <sstream>
-#include <type_traits>
 #include <gtest/gtest.h>
 
 /// @Kokkos_Feature_Level_Required:2
