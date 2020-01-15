@@ -82,9 +82,24 @@ struct TestReduction {
 
     ASSERT_EQ(sum, sum_local * value);
   }
+  // Allocate Memory for both device and host memory spaces
+  void alloc_mem() {
+    deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
+        "dataD", num_elements * sizeof(DataType));
+    hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
+        "dataH", num_elements * sizeof(DataType));
+  }
+
+  // Free the allocated memory
+  void free_mem() {
+    Kokkos::kokkos_free<MemSpaceD>(deviceData);
+    Kokkos::kokkos_free<MemSpaceH>(hostData);
+  }
 
   void reduction() {
-    double sum = 0.0;
+    DataType sum = 0.0;
+    alloc_mem();
+
 #if defined(KOKKOS_ENABLE_CUDA)
     typedef Kokkos::RangePolicy<ExecSpace, Kokkos::Schedule<Kokkos::Static> >
         range_policy;
@@ -92,12 +107,6 @@ struct TestReduction {
     typedef Kokkos::RangePolicy<ExecSpace, Kokkos::Schedule<Kokkos::Dynamic> >
         range_policy;
 #endif
-
-    // Allocate Memory for both device and host memory spaces
-    deviceData = (DataType *)Kokkos::kokkos_malloc<MemSpaceD>(
-        "dataD", num_elements * sizeof(DataType));
-    hostData = (DataType *)Kokkos::kokkos_malloc<MemSpaceH>(
-        "dataH", num_elements * sizeof(DataType));
 
     // parallel_reduce call
     Functor func(deviceData);
@@ -111,9 +120,7 @@ struct TestReduction {
     // Check if all data has been update correctly
     compare_equal(sum);
 
-    // Free the allocated memory
-    Kokkos::kokkos_free<MemSpaceD>(deviceData);
-    Kokkos::kokkos_free<MemSpaceH>(hostData);
+    free_mem();
   }
 };
 
