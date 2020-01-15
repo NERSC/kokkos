@@ -54,10 +54,10 @@ const double value = 0.5;
 
 // Unit Test for Reduction
 
-struct Functor {
+struct ReduceFunctor {
   DataType *_data;
 
-  Functor(DataType *data) : _data(data) {}
+  ReduceFunctor(DataType *data) : _data(data) {}
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, double &UpdateSum) const {
@@ -109,15 +109,10 @@ struct TestReduction {
 #endif
 
     // parallel_reduce call
-    Functor func(deviceData);
-    Kokkos::parallel_reduce("Reduction", range_policy(0, num_elements), func,
-                            sum);
+    Kokkos::parallel_reduce("Reduction", range_policy(0, num_elements),
+                            ReduceFunctor(deviceData), sum);
 
-    // Copy the data back to Host memory space
-    Kokkos::Impl::DeepCopy<MemSpaceD, MemSpaceH>(
-        hostData, deviceData, num_elements * sizeof(DataType));
-
-    // Check if all data has been update correctly
+    // Check if reduction has produced correct results
     compare_equal(sum);
 
     free_mem();
